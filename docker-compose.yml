@@ -1,0 +1,62 @@
+version: "3.7"
+services:
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert.rules:/etc/prometheus/alert.rules
+      - ./targets.yml:/etc/prometheus/targets.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "8090:9090"
+    environment:
+      VIRTUAL_HOST: prometheus.finspire.tech
+      VIRTUAL_PORT: 8090
+      LETSENCRYPT_HOST: prometheus.finspire.tech
+      LETSENCRYPT_EMAIL: admin@finspiretech.com
+    networks:
+      - finspire
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "4000:3000"
+    user: "$UID:$GID"
+    volumes:
+      - ./grafana.ini:/etc/grafana/grafana.ini
+      - ./datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml
+      - /data/docker/bind-mounts/grafana:/var/lib/grafana
+    environment:
+      VIRTUAL_HOST: grafana.finspire.tech
+      VIRTUAL_PORT: 4000
+      LETSENCRYPT_HOST: grafana.finspire.tech
+      LETSENCRYPT_EMAIL: admin@finspiretech.com
+      GF_SECURITY_ADMIN_USER: finspire_admin
+      GF_SECURITY_ADMIN_PASSWORD: F1nsp1r3@2021
+    networks:
+      - finspire
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8101:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - finspire
+    devices:
+      - /dev/kmsg
+
+networks:
+  finspire:
+    name: finspire
+
+volumes:
+  prometheus-data:
